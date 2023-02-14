@@ -145,7 +145,16 @@ do
     cp -r "$scriptDir/dist" .
 
     echo "[*] RUNNING RECON ON $DOMAIN."
-    notify "Starting recon on $DOMAIN. Enumerating subdomains with Amass..."
+    notify "Starting recon on $DOMAIN. Enumerating subdomains with Assetfinder and Amass..."
+
+    if [ ! -f "domains-$DOMAIN.txt" ] || [ "$overwrite" = true ]
+    then
+        echo "[*] RUNNING ASSETFINDER..."
+        echo "$DOMAIN" | assetfinder --subs-only > "domains-$DOMAIN.txt"
+        notify "ASSETFINDER completed! Identified *$(wc -l < "domains-$DOMAIN.txt")* subdomains."
+    else
+        echo "[-] SKIPPING ASSETFINDER"
+    fi
 
     if [ ! -f "domains-$DOMAIN.txt" ] || [ "$overwrite" = true ]
     then
@@ -155,6 +164,9 @@ do
     else
         echo "[-] SKIPPING AMASS"
     fi
+
+    #remove duplicates
+    sort -u "domains-$DOMAIN.txt" -o "domains-$DOMAIN.txt"
 
     if [ ! -f "ip-addresses-$DOMAIN.txt" ] || [ "$overwrite" = true ]
     then
@@ -179,18 +191,18 @@ do
 
     if [ ! -f "livedomains-$DOMAIN.txt" ] || [ "$overwrite" = true ]
     then
-        echo "[*] RUNNING HTTPX..."
-        httpx -silent -no-color -l "domains-$DOMAIN.txt" -title -content-length -web-server -status-code -ports 80,8080,443,8443 -threads 25 -o "httpx-$DOMAIN.txt"
+        echo "[*] RUNNING HTTPROBE..."
+        cat "domains-$DOMAIN.txt" | httprobe -c 50 --prefer-https > "httpx-$DOMAIN.txt"
         cut -d' ' -f1 < "httpx-$DOMAIN.txt" | sort -u > "livedomains-$DOMAIN.txt"
-        notify "HTTPX completed. *$(wc -l < "livedomains-$DOMAIN.txt")* endpoints seem to be alive. Checking for hijackable subdomains with SubJack..."
+        notify "HTTPROBE completed. *$(wc -l < "livedomains-$DOMAIN.txt")* endpoints seem to be alive. Checking for hijackable subdomains with SubJack..."
     else
-        echo "[-] SKIPPING HTTPX"
+        echo "[-] SKIPPING HTTPROBE"
     fi
 
     if [ ! -f "subjack-$DOMAIN.txt" ] || [ "$overwrite" = true ]
     then
         echo "[*] RUNNING SUBJACK..."
-        subjack -w "domains-$DOMAIN.txt" -t 100 -c "$toolsDir/subjack/fingerprints.json" -o "subjack-$DOMAIN.txt" -a
+        subjack -w "domains-$DOMAIN.txt" -t 100 -c "$toolsDir/subjack/fingerprints.json" -o "subjack-$DOMAIN.txt" -a -ssl
         if [ -f "subjack-$DOMAIN.txt" ]; then
             echo "[+] HIJACKABLE SUBDOMAINS FOUND!"
             notify "SubJack completed. One or more hijackable subdomains found!"
@@ -204,14 +216,13 @@ do
         echo "[-] SKIPPING SUBJACK"
     fi
 
-    if [ ! -d "webscreenshot" ] || [ "$overwrite" = true ]
+    if [ ! -d "fff" ] || [ "$overwrite" = true ]
     then
-        echo "[*] RUNNING WEBSCREENSHOT..."
-        webscreenshot -i "livedomains-$DOMAIN.txt" -o webscreenshot --no-error-file
-        generate_screenshot_report "$DOMAIN"
-        notify "WebScreenshot completed! Took *$(find webscreenshot/* -maxdepth 0 | wc -l)* screenshots. Getting Wayback Machine path list with GAU..."
+        echo "[*] RUNNING FFF..."
+        cat "httpx-$DOMAIN.txt" | fff -d 1 -S -o roots
+        notify "fff completed! Getting Wayback Machine path list with GAU..."
     else
-        echo "[-] SKIPPING WEBSCREENSHOT"
+        echo "[-] SKIPPING FFF"
     fi
 
     if [ ! -f "WayBack-$DOMAIN.txt" ] || [ "$overwrite" = true ]
@@ -265,6 +276,12 @@ do
                 gobuster -q -e -t 20 -s 200,204 -k -to 3s -u "$dname" -w "$toolsDir"/wordlists/tempfiles.txt -o "gobuster-$filename.txt"
             done < "../livedomains-$DOMAIN.txt"
 
+            while read -r dname;
+            do
+                filename=$(echo "${dname##*/}" | sed 's/:/./g')
+                gobuster -q -e -t 20 -s 200,204 -k -to 3s -u "$dname" -w "$toolsDir"/wordlists/directory-list-lowercase-2.3-small.txt -o "gobuster-dirs-$filename.txt"
+            done < "../livedomains-$DOMAIN.txt"
+
             find . -size 0 -delete
 
             if [ "$(ls -A .)" ]; then
@@ -277,6 +294,31 @@ do
             fi   
         else
             echo "[-] SKIPPING GOBUSTER"
+        fi
+
+        if [ ! -d "ffuf" ] || [ "$overwrite" = true ]
+        then
+            echo "[*] RUNNING FFUF..."
+            mkdir ffuf
+            cd ffuf || { echo "Something went wrong"; exit 1; }
+
+            while read -r dname;
+            do
+                filename=$(echo "${dname##*/}" | sed 's/:/./g')
+                ffuf -w $toolsDir/wordlists/raft-large-files.txt -u "$dname"/FUZZ -o "ffuf-files-$filename.txt"
+            done < "../livedomains-$DOMAIN.txt"
+
+            find . -size 0 -delete
+
+            if [ "$(ls -A .)" ]; then
+                notify "fuff completed. Got *$(cat ./* | wc -l)* files. Spidering paths with GoSpider..."
+                cd .. || { echo "Something went wrong"; exit 1; }
+            else
+                notify "fuff completed. No temporary files identified. Spidering paths with GoSpider..."
+                cd .. || { echo "Something went wrong"; exit 1; }
+            fi   
+        else
+            echo "[-] SKIPPING FFUF"
         fi
 
         if [ ! -f "paths-$DOMAIN.txt" ] || [ "$overwrite" = true ]
@@ -313,6 +355,7 @@ do
             gf sqli < "paths-$DOMAIN.txt" > "check-manually/sql-injection.txt"
             gf lfi < "paths-$DOMAIN.txt" > "check-manually/local-file-inclusion.txt"
             gf ssti < "paths-$DOMAIN.txt" > "check-manually/server-side-template-injection.txt"
+            grep config < cat "gobuster/*" > "check-manually/configs.txt"
             notify "Done! Gathered a total of *$(wc -l < "paths-$DOMAIN.txt")* paths, of which *$(cat check-manually/* | wc -l)* possibly exploitable. Testing for Server-Side Template Injection..."
         else
             echo "[-] SKIPPING GF"
