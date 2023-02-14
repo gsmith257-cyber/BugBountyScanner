@@ -191,12 +191,12 @@ do
 
     if [ ! -f "livedomains-$DOMAIN.txt" ] || [ "$overwrite" = true ]
     then
-        echo "[*] RUNNING HTTPROBE..."
-        cat "domains-$DOMAIN.txt" | httprobe -c 50 --prefer-https > "httpx-$DOMAIN.txt"
+        echo "[*] RUNNING HTTPX..."
+        httpx -silent -no-color -l "domains-$DOMAIN.txt" -title -content-length -web-server -status-code -ports 80,8080,443,8443 -threads 25 -o "httpx-$DOMAIN.txt"
         cut -d' ' -f1 < "httpx-$DOMAIN.txt" | sort -u > "livedomains-$DOMAIN.txt"
-        notify "HTTPROBE completed. *$(wc -l < "livedomains-$DOMAIN.txt")* endpoints seem to be alive. Checking for hijackable subdomains with SubJack..."
+        notify "HTTPX completed. *$(wc -l < "livedomains-$DOMAIN.txt")* endpoints seem to be alive. Checking for hijackable subdomains with SubJack..."
     else
-        echo "[-] SKIPPING HTTPROBE"
+        echo "[-] SKIPPING HTTPX"
     fi
 
     if [ ! -f "subjack-$DOMAIN.txt" ] || [ "$overwrite" = true ]
