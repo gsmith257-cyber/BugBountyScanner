@@ -103,6 +103,18 @@ cp $toolsDir/phantomjs-2.1.1-linux-x86_64/bin/phantomjs /usr/bin/phantomjs
 echo "[*] Installing WebScreenshot via pip..."
 pip3 install webscreenshot >/dev/null
 
+#install assetfinder
+echo "[*] Installing assetfinder..."
+go install github.com/tomnomnom/assetfinder@latest &>/dev/null
+
+#install httprobe
+go install github.com/tomnomnom/httprobe@latest &>/dev/null
+
+go install github.com/tomnomnom/gf@latest &>/dev/null
+
+#install fff
+go install github.com/tomnomnom/fff@latest &>/dev/null
+
 # Subjack fingerprints file
 echo "[*] Installing Subjack fingerprints..."
 mkdir "$toolsDir/subjack"
@@ -133,11 +145,24 @@ git clone -q https://github.com/1ndianl33t/Gf-Patterns
 mkdir "$homeDir"/.gf
 cp "$toolsDir"/Gf-Patterns/*.json "$homeDir"/.gf
 
+
+#installing ffuf
+go install github.com/ffuf/ffuf/v2@latest &>/dev/null
+
+
 # nrich
 echo "[*] Installing nrich..."
 wget -q https://gitlab.com/api/v4/projects/33695681/packages/generic/nrich/latest/nrich_latest_amd64.deb
 dpkg -i nrich_latest_amd64.deb &>/dev/null
 rm nrich_latest_amd64.deb
+
+#save file from https://github.com/danielmiessler/SecLists/raw/master/Discovery/Web-Content/raft-large-files.txt
+echo "[*] Saving raft-large-files.txt..."
+wget -q https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/Web-Content/raft-large-files.txt -O $toolsDir/wordlists/raft-large-files.txt
+
+#save file from https://github.com/danielmiessler/SecLists/raw/master/Discovery/Web-Content/directory-list-lowercase-2.3-small.txt
+echo "[*] Saving directory-list-lowercase-2.3-small.txt..."
+wget -q https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/Web-Content/directory-list-lowercase-2.3-small.txt -O $toolsDir/wordlists/directory-list-lowercase-2.3-small.txt
 
 # Persist configured environment variables via global profile.d script
 echo "[*] Setting environment variables..."
