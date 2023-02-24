@@ -104,12 +104,15 @@ then
     mkdir -p "$baseDir"
 fi
 
-if [ "${#domainargs[@]}" -ne 0 ]
+# Check if user wants to input txt file or domains directly
+echo "[*] Checking for domains..."
+if [ "${#domainargs[@]}" -eq 1 ] && [ -f "${domainargs[0]}" ]
 then
-    IFS=', ' read -r -a DOMAINS <<< "${domainargs[@]}"
+    echo "[*] Found file, reading domains..."
+    IFS=$'\r' read -r -a DOMAINS < "${domainargs[0]}"
 else
     read -r -p "[?] What's the target domain(s)? E.g. \"domain.com,domain2.com\". DOMAIN: " domainsresponse
-    IFS=', ' read -r -a DOMAINS <<< "$domainsresponse"  
+    IFS=', ' read -r -a DOMAINS <<< "$domainsresponse"
 fi
 
 if [ -z "$toolsDir" ]
@@ -147,13 +150,23 @@ do
     echo "[*] RUNNING RECON ON $DOMAIN."
     notify "Starting recon on $DOMAIN. Enumerating subdomains with Assetfinder and Amass..."
 
-    if [ ! -f "domains-$DOMAIN.txt" ] || [ "$overwrite" = true ]
+    if [ ! -f "assetfinder-$DOMAIN.txt" ] || [ "$overwrite" = true ]
     then
         echo "[*] RUNNING ASSETFINDER..."
-        echo "$DOMAIN" | assetfinder --subs-only > "domains-$DOMAIN.txt"
-        notify "ASSETFINDER completed! Identified *$(wc -l < "domains-$DOMAIN.txt")* subdomains."
+        echo "$DOMAIN" | assetfinder --subs-only > "assetfinder-$DOMAIN.txt"
+        notify "ASSETFINDER completed! Identified *$(wc -l < "assetfinder-$DOMAIN.txt")* subdomains."
     else
         echo "[-] SKIPPING ASSETFINDER"
+    fi
+
+    #run subfinder to find all subdomains
+    if [ ! -f "subfinder-$DOMAIN.txt" ] || [ "$overwrite" = true ]
+    then
+        echo "[*] RUNNING SUBFINDER..."
+        subfinder -d "$DOMAIN" -silent -all -o "subfinder-$DOMAIN.txt"
+        notify "Subfinder completed! Identified *$(wc -l < "subfinder-$DOMAIN.txt")* subdomains."
+    else
+        echo "[-] SKIPPING SUBFINDER"
     fi
 
     if [ ! -f "domains-$DOMAIN.txt" ] || [ "$overwrite" = true ]
@@ -165,8 +178,9 @@ do
         echo "[-] SKIPPING AMASS"
     fi
 
-    #remove duplicates
-    sort -u "domains-$DOMAIN.txt" -o "domains-$DOMAIN.txt"
+    #merge all subdomains
+    cat "domains-$DOMAIN.txt" "subfinder-$DOMAIN.txt" "assetfinder-$DOMAIN.txt" | sort -u > "domains-$DOMAIN.txt" && rm "subfinder-$DOMAIN.txt" "assetfinder-$DOMAIN.txt"
+    notify "Merged all subdomains! Identified *$(wc -l < "domains-$DOMAIN.txt")* subdomains. Resolving IP addresses..."
 
     if [ ! -f "ip-addresses-$DOMAIN.txt" ] || [ "$overwrite" = true ]
     then
@@ -285,40 +299,15 @@ do
             find . -size 0 -delete
 
             if [ "$(ls -A .)" ]; then
-                notify "GoBuster completed. Got *$(cat ./* | wc -l)* files. Spidering paths with GoSpider..."
+                notify "GoBuster completed. Got *$(cat ./* | wc -l)* files. Finding more stuff wiht ffuf..."
                 cd .. || { echo "Something went wrong"; exit 1; }
             else
-                notify "GoBuster completed. No temporary files identified. Spidering paths with GoSpider..."
+                notify "GoBuster completed. No temporary files identified. Finding more stuff wiht ffuf..."
                 cd .. || { echo "Something went wrong"; exit 1; }
                 rm -rf gobuster
             fi   
         else
             echo "[-] SKIPPING GOBUSTER"
-        fi
-
-        if [ ! -d "ffuf" ] || [ "$overwrite" = true ]
-        then
-            echo "[*] RUNNING FFUF..."
-            mkdir ffuf
-            cd ffuf || { echo "Something went wrong"; exit 1; }
-
-            while read -r dname;
-            do
-                filename=$(echo "${dname##*/}" | sed 's/:/./g')
-                ffuf -w $toolsDir/wordlists/raft-large-files.txt -u "$dname"/FUZZ -o "ffuf-files-$filename.txt"
-            done < "../livedomains-$DOMAIN.txt"
-
-            find . -size 0 -delete
-
-            if [ "$(ls -A .)" ]; then
-                notify "fuff completed. Got *$(cat ./* | wc -l)* files. Spidering paths with GoSpider..."
-                cd .. || { echo "Something went wrong"; exit 1; }
-            else
-                notify "fuff completed. No temporary files identified. Spidering paths with GoSpider..."
-                cd .. || { echo "Something went wrong"; exit 1; }
-            fi   
-        else
-            echo "[-] SKIPPING FFUF"
         fi
 
         if [ ! -f "paths-$DOMAIN.txt" ] || [ "$overwrite" = true ]
@@ -418,6 +407,31 @@ do
         else
             echo "[-] SKIPPING NMAP"
         fi
+        if [ ! -d "ffuf" ] || [ "$overwrite" = true ]
+        then
+            echo "[*] RUNNING FFUF..."
+            mkdir ffuf
+            cd ffuf || { echo "Something went wrong"; exit 1; }
+
+            while read -r dname;
+            do
+                filename=$(echo "${dname##*/}" | sed 's/:/./g')
+                ffuf -w $toolsDir/wordlists/raft-large-files.txt -u "$dname"/FUZZ -o "ffuf-files-$filename.txt"
+            done < "../livedomains-$DOMAIN.txt"
+
+            find . -size 0 -delete
+
+            if [ "$(ls -A .)" ]; then
+                notify "fuff completed. Got *$(cat ./* | wc -l)* files. Spidering paths with GoSpider..."
+                cd .. || { echo "Something went wrong"; exit 1; }
+            else
+                notify "fuff completed. No temporary files identified. Spidering paths with GoSpider..."
+                cd .. || { echo "Something went wrong"; exit 1; }
+            fi   
+        else
+            echo "[-] SKIPPING FFUF"
+        fi
+
     fi
 
     cd ..

@@ -88,6 +88,7 @@ go install github.com/tomnomnom/qsreplace@latest &>/dev/null
 go install github.com/haccer/subjack@latest &>/dev/null
 go install github.com/OJ/gobuster@latest &>/dev/null
 go install github.com/projectdiscovery/nuclei/v2/cmd/nuclei@latest &>/dev/null
+go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest &>/dev/null
 
 # Nuclei-templates
 nuclei -update-templates -update-template-dir $toolsDir/nuclei-templates &>/dev/null
@@ -173,6 +174,20 @@ then
     echo 'export PATH=$PATH:$GOPATH/bin:$GOROOT/bin';
     echo "export GO111MODULE=on"; } >> "$homeDir"/.bashrc
 fi
+
+#setup subfinder
+echo "[*] Setting up subfinder..."
+#get the Shodan API key from user
+$shodan = read-host "Enter your Shodan API key"
+$virustotal = read-host "Enter your VirusTotal API key"
+$securitytrails = read-host "Enter your SecurityTrails API key"
+$binaryEdge = read-host "Enter your BinaryEdge API key"
+#add api keys to $HOME/.config/subfinder/config.yaml in the format: binaryedge: - key
+echo "binaryedge: \n - $binaryEdge" > $homeDir/.config/subfinder/config.yaml
+echo "virustotal: \n - $virustotal" >> $homeDir/.config/subfinder/config.yaml
+echo "securitytrails: \n - $securitytrails" >> $homeDir/.config/subfinder/config.yaml
+echo "shodan: \n - $shodan" >> $homeDir/.config/subfinder/config.yaml
+
 
 if [ -f "$homeDir"/.zshrc ]
 then
