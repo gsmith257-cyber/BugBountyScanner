@@ -71,7 +71,7 @@ if [ $? -ne 0 ]; then
     tar -xvf go1.19.4.linux-amd64.tar.gz -C /usr/local >/dev/null
     rm -rf ./go1.19.4.linux-amd64.tar.gz >/dev/null
     export GOROOT="/usr/local/go"
-    export GOPATH="$homeDir/go"
+    export GOPATH="$homeDir/.go"
     export PATH="$PATH:${GOPATH}/bin:${GOROOT}/bin:${PATH}"
 else
     echo "[*] Skipping Golang install, already installed."
