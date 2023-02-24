@@ -161,6 +161,9 @@ rm nrich_latest_amd64.deb
 echo "[*] Saving raft-large-files.txt..."
 wget -q https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/Web-Content/raft-large-files.txt -O $toolsDir/wordlists/raft-large-files.txt
 
+echo "[*] Saving raft-small-files.txt..."
+wget -q https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/Web-Content/raft-small-files.txt -O $toolsDir/wordlists/raft-small-files.txt
+
 #save file from https://github.com/danielmiessler/SecLists/raw/master/Discovery/Web-Content/directory-list-lowercase-2.3-small.txt
 echo "[*] Saving directory-list-lowercase-2.3-small.txt..."
 wget -q https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/Web-Content/directory-list-lowercase-2.3-small.txt -O $toolsDir/wordlists/directory-list-lowercase-2.3-small.txt

@@ -109,6 +109,10 @@ echo "[*] Checking for domains..."
 if [ "${#domainargs[@]}" -eq 1 ] && [ -f "${domainargs[0]}" ]
 then
     echo "[*] Found file, reading domains..."
+    #repalce newlines with ,
+    sed -i ':a;N;$!ba;s/\n/, /g' "${domainargs[0]}"
+    #read file into array
+    #DO THIS
     IFS=$'\r' read -r -a DOMAINS < "${domainargs[0]}"
 else
     read -r -p "[?] What's the target domain(s)? E.g. \"domain.com,domain2.com\". DOMAIN: " domainsresponse
@@ -302,7 +306,7 @@ do
                 notify "GoBuster completed. Got *$(cat ./* | wc -l)* files. Finding more stuff wiht ffuf..."
                 cd .. || { echo "Something went wrong"; exit 1; }
             else
-                notify "GoBuster completed. No temporary files identified. Finding more stuff wiht ffuf..."
+                notify "GoBuster completed. No temporary files identified. Running GoSpider..."
                 cd .. || { echo "Something went wrong"; exit 1; }
                 rm -rf gobuster
             fi   
@@ -403,7 +407,7 @@ do
             echo "[*] RUNNING NMAP (SNMP UDP)..."
             nmap -T4 -sU -sV -p 161 --open --source-port 53 -iL nmap/tcpips.txt -oA nmap/nmap-161udp
             rm nmap/tcpips.txt
-            notify "Nmap UDP done! Identified *$(grep "Port" < "nmap/nmap-161udp.gnmap" | grep -cv "filtered")* IPS with SNMP port open."
+            notify "Nmap UDP done! Identified *$(grep "Port" < "nmap/nmap-161udp.gnmap" | grep -cv "filtered")* IPS with SNMP port open. Finding more stuff with ffuf..."
         else
             echo "[-] SKIPPING NMAP"
         fi
@@ -416,7 +420,7 @@ do
             while read -r dname;
             do
                 filename=$(echo "${dname##*/}" | sed 's/:/./g')
-                ffuf -w $toolsDir/wordlists/raft-large-files.txt -u "$dname"/FUZZ -o "ffuf-files-$filename.txt"
+                ffuf -w $toolsDir/wordlists/raft-small-files.txt -u "$dname"/FUZZ -o "ffuf-files-$filename.txt"
             done < "../livedomains-$DOMAIN.txt"
 
             find . -size 0 -delete
