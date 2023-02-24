@@ -111,9 +111,8 @@ then
     echo "[*] Found file, reading domains..."
     #repalce newlines with ,
     sed -i ':a;N;$!ba;s/\n/, /g' "${domainargs[0]}"
-    #read file into array
-    #DO THIS
-    IFS=$'\r' read -r -a DOMAINS < "${domainargs[0]}"
+    #read the file into an array with , as delimiter
+    IFS=$',' read -r -a DOMAINS < "${domainargs[0]}"
 else
     read -r -p "[?] What's the target domain(s)? E.g. \"domain.com,domain2.com\". DOMAIN: " domainsresponse
     IFS=', ' read -r -a DOMAINS <<< "$domainsresponse"
