@@ -148,13 +148,13 @@ do
     cp -r "$scriptDir/dist" .
 
     echo "[*] RUNNING RECON ON $DOMAIN."
-    notify "Starting recon on $DOMAIN. Enumerating subdomains with Assetfinder and Amass..."
+    notify "Starting recon on $DOMAIN. Enumerating subdomains with Assetfinder, Subfinder, and Amass..."
 
     if [ ! -f "assetfinder-$DOMAIN.txt" ] || [ "$overwrite" = true ]
     then
         echo "[*] RUNNING ASSETFINDER..."
         echo "$DOMAIN" | assetfinder --subs-only > "assetfinder-$DOMAIN.txt"
-        notify "ASSETFINDER completed! Identified *$(wc -l < "assetfinder-$DOMAIN.txt")* subdomains."
+        notify "ASSETFINDER completed! Identified *$(wc -l < "assetfinder-$DOMAIN.txt")* subdomains. Moving to Subfinder..."
     else
         echo "[-] SKIPPING ASSETFINDER"
     fi
@@ -164,7 +164,7 @@ do
     then
         echo "[*] RUNNING SUBFINDER..."
         subfinder -d "$DOMAIN" -silent -all -o "subfinder-$DOMAIN.txt"
-        notify "Subfinder completed! Identified *$(wc -l < "subfinder-$DOMAIN.txt")* subdomains."
+        notify "Subfinder completed! Identified *$(wc -l < "subfinder-$DOMAIN.txt")* subdomains. Moving to Amass..."
     else
         echo "[-] SKIPPING SUBFINDER"
     fi
