@@ -109,8 +109,10 @@ echo "[*] Checking for domains..."
 if [ "${#domainargs[@]}" -eq 1 ] && [ -f "${domainargs[0]}" ]
 then
     echo "[*] Found file, reading domains..."
-    #repalce newlines with ,
-    sed -i ':a;N;$!ba;s/\n/, /g' "${domainargs[0]}"
+    #turn /r into /n
+    sed -i 's/\r/\n/g' "${domainargs[0]}"
+    #repalce newlines with , and remove trailing ,
+    sed -i ':a;N;$!ba;s/\n/,/g' "${domainargs[0]}"
     #read the file into an array with , as delimiter
     IFS=$',' read -r -a DOMAINS < "${domainargs[0]}"
 else
