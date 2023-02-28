@@ -186,6 +186,8 @@ do
     #merge all subdomains
     cat "domains-$DOMAIN.txt" "subfinder-$DOMAIN.txt" "assetfinder-$DOMAIN.txt" | sort -u > "domains-$DOMAIN.txt" && rm "subfinder-$DOMAIN.txt" "assetfinder-$DOMAIN.txt"
     notify "Merged all subdomains! Identified *$(wc -l < "domains-$DOMAIN.txt")* subdomains. Resolving IP addresses..."
+    #add original domain to list
+    echo "$DOMAIN" >> "domains-$DOMAIN.txt"
 
     if [ ! -f "ip-addresses-$DOMAIN.txt" ] || [ "$overwrite" = true ]
     then
