@@ -1,18 +1,14 @@
-# BugBountyScanner
+# BugBountyScanner - S1n1st3r Update
 
-[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/chvancooten/bugbountyscanner/Docker%20Build)](https://github.com/chvancooten/BugBountyScanner/actions)
-[![Docker Pulls Badge](https://img.shields.io/docker/pulls/chvancooten/bugbountyscanner)](https://hub.docker.com/r/chvancooten/bugbountyscanner/)
-[![Docker Automated Badge](https://img.shields.io/docker/cloud/automated/chvancooten/bugbountyscanner)](https://hub.docker.com/r/chvancooten/bugbountyscanner/)
-[![Docker Image Size Badge](https://img.shields.io/docker/image-size/chvancooten/bugbountyscanner)](https://hub.docker.com/r/chvancooten/bugbountyscanner/)
-[![PRs Welcome](https://img.shields.io/badge/Contributions-Welcome-brightgreen.svg)](http://makeapullrequest.com)
+My updated version of this script. Works alot better and I have made some good $$$ with it.
 
-A Bash script and Docker image for Bug Bounty reconnaissance, intended for headless use. Low on resources, high on information output.
+## Notes
 
-Helpful? BugBountyScanner helped you net a bounty?
-
-[![Docker Image Size Badge](https://img.shields.io/badge/%F0%9F%8D%BA-Buy%20me%20a%20beer-orange)](https://www.buymeacoffee.com/chvancooten)
+- Setup breaks on the config file for subfinder. Just edit it manually.
 
 ## Description
+
+A Bash script and Docker image for Bug Bounty reconnaissance, intended for headless use. Low on resources, high on information output.
 
 > ⚠ Note: Using the script over a VPN is highly recommended.
 
@@ -57,7 +53,7 @@ services:
 Alternatively, you can build the image from source.
 
 ```
-git clone https://github.com/chvancooten/BugBountyScanner.git
+git clone <link>
 cd BugBountyScanner
 docker build .
 ```
@@ -69,7 +65,7 @@ If you prefer running the script manually, you can do so.
 > ℹ Note: The script has been built on -and tested for- Ubuntu 20.04. Your mileage may vary with other distro's, but it should work on most Debian-based installs (such as Kali Linux).
 
 ```
-git clone https://github.com/chvancooten/BugBountyScanner.git
+git clone <link>
 cd BugBountyScanner
 cp .env.example .env # Edit accordingly
 chmod +x BugBountyScanner.sh setup.sh
