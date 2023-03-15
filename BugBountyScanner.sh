@@ -48,6 +48,7 @@ do
         echo "-d, --domain <domain>         top domain to scan, can take multiple"
         echo "-o, --outputdirectory <dir>   parent output directory, defaults to current directory (subfolders will be created per domain)"
         echo "-w, --overwrite               overwrite existing files. Skip steps with existing files if not provided (default: false)"
+        echo "-s, --Synack                  Synack specific recon (default: false)"
         echo " "
         echo "Note: 'ToolsDir', as well as your 'telegram_api_key' and 'telegram_chat_id' can be defined in .env or through (Docker) environment variables."
         echo " "
@@ -77,6 +78,11 @@ do
         -w|--overwrite)
         overwrite=true
         shift
+        ;;
+        -s|--Synack)
+        Synack=true
+        shift
+        ;;
     esac
 done
 
@@ -104,8 +110,43 @@ then
     mkdir -p "$baseDir"
 fi
 
+#check for synack option
+if [ "$Synack" = true ]
+then
+    echo "[*] Synack specific recon enabled."
+    notify "Synack specific recon enabled."
+    #take in a list of subnets from txt file
+    if [ "${#domainargs[@]}" -eq 1 ] && [ -f "${domainargs[0]}" ]
+    then
+        echo "[*] Found file, reading subnets..."
+        #turn /r into /n
+        sed -i 's/\r/\n/g' "${domainargs[0]}"
+        #repalce newlines with , and remove trailing ,
+        sed -i ':a;N;$!ba;s/\n/,/g' "${domainargs[0]}"
+        #read the file into an array with , as delimiter
+        IFS=$',' read -r -a SUBNETS < "${domainargs[0]}"
+    else
+        read -r -p "[?] What's the target subnet(s)? E.g. \""
+        IFS=', ' read -r -a SUBNETS <<< "$subnetsresponse"
+    #get FQDNs from subnets
+    for subnet in "${SUBNETS[@]}"
+    do
+        echo "[*] Getting FQDNs from $subnet..."
+        notify "Getting FQDNs from $subnet..."
+        #get FQDNs from subnet
+        nmap -sL $subnet | grep -oE "[a-zA-Z0-9.-]+\.[a-zA-Z0-9.-]+" | sort -u >> $baseDir/domains.txt
+    done
+fi
+
+
+
 # Check if user wants to input txt file or domains directly
 echo "[*] Checking for domains..."
+if [ "$Synack" = true ]
+then
+    #set "${#domainargs[@]}" to $baseDir/domains.txt
+    domainargs[0]="$baseDir/domains.txt"
+fi
 if [ "${#domainargs[@]}" -eq 1 ] && [ -f "${domainargs[0]}" ]
 then
     echo "[*] Found file, reading domains..."
