@@ -136,6 +136,10 @@ then
         notify "Getting FQDNs from $subnet..."
         #get FQDNs from subnet
         nmap -sL $subnet | grep -oE "[a-zA-Z0-9.-]+\.[a-zA-Z0-9.-]+" | sort -u >> $baseDir/domains.txt
+        #clear any domain with nmap in it
+        sed -i '/nmap/d' $baseDir/domains.txt
+        #remove anything with a digit after the last '.'
+        sed -i '/\.[0-9]/d' $baseDir/domains.txt
     done
 fi
 
