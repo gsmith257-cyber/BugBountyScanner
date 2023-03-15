@@ -128,6 +128,7 @@ then
     else
         read -r -p "[?] What's the target subnet(s)? E.g. \""
         IFS=', ' read -r -a SUBNETS <<< "$subnetsresponse"
+    fi
     #get FQDNs from subnets
     for subnet in "${SUBNETS[@]}"
     do
