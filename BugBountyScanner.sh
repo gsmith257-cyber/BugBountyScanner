@@ -134,8 +134,8 @@ then
         nmap -sL $subnet | grep -oE "[a-zA-Z0-9.-]+\.[a-zA-Z0-9.-]+" | sort -u >> $baseDir/domains.txt
         #clear any domain with nmap in it
         sed -i '/nmap/d' $baseDir/domains.txt
-        #remove anything with 4 or less characters
-        sed -i '/.{1,4}$/d' $baseDir/domains.txt
+        #remove anything with 2 numbers at the end of it
+        sed -i '/.*.[0-9]{2}\n/d' $baseDir/domains.txt
     done
 fi
 
